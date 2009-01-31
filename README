@@ -1,0 +1,147 @@
+= nahoPropelOptimizerPlugin plugin =
+
+This `nahoPropelOptimizerPlugin` plugin fixes a few defects (not to say "bugs") in Propel model generation, that are not yet handled by Symfony builder wrapping.
+
+== Instalation ==
+
+  * Install the plugin
+    
+    {{{
+      symfony plugin-install http://plugins.symfony-project.com/nahoPropelOptimizerPlugin
+    }}}
+    
+    Like any other plugin, you can either extract one of the attached archives, or use Subversion.
+  
+  * Edit `config/propel.ini` and find the following lines :
+    
+    {{{
+      ; builder settings
+      propel.builder.peer.class              = addon.propel.builder.SfPeerBuilder
+      propel.builder.object.class            = addon.propel.builder.SfObjectBuilder
+      
+      propel.builder.objectstub.class        = addon.propel.builder.SfExtensionObjectBuilder
+      propel.builder.peerstub.class          = addon.propel.builder.SfExtensionPeerBuilder
+      propel.builder.objectmultiextend.class = addon.propel.builder.SfMultiExtendObjectBuilder
+      propel.builder.mapbuilder.class        = addon.propel.builder.SfMapBuilderBuilder
+    }}}
+    
+    And replace `addon.propel.builder.Sf` with `plugins.nahoPropelOptimizerPlugin.lib.SfOptimized` :
+    
+    {{{
+      ; builder settings
+      propel.builder.peer.class              = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedPeerBuilder
+      propel.builder.object.class            = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedObjectBuilder
+      
+      propel.builder.objectstub.class        = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedExtensionObjectBuilder
+      propel.builder.peerstub.class          = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedExtensionPeerBuilder
+      propel.builder.objectmultiextend.class = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedMultiExtendObjectBuilder
+      propel.builder.mapbuilder.class        = plugins.nahoPropelOptimizerPlugin.lib.SfOptimizedMapBuilderBuilder
+    }}}
+  
+  * Rebuild your model :
+    
+    {{{
+      $ symfony propel-build-model
+      $ symfony cc
+    }}}
+
+Your model classes have been regenerated with all the supported optimizations. You're ready to go !
+
+Default behavior is enabling all supported optimizations, see the "Configuration" section to disable some of them if you want.
+
+== Optimizations ==
+
+This section lists all the changes made by this custom builder.
+
+=== Includes overhead (defect) ===
+
+Default behavior does not remove all the useless calls to "include_once" made by Propel (it removes some of them, but not all). They are useless as the autoloader already takes care of this, and they add a little useless overhead.
+
+`nahoPropelOptimizer` removes all these calls in Peer and MapBuilder classes.
+
+=== Explicit joins (bug) ===
+
+With the default builder, Peer classes join with an implicit JOIN. PostPeer::doSelectJoinAuthor will execute this query :
+
+{{{
+  SELECT * FROM post, author WHERE post.author_id = author.id AND ...
+}}}
+
+Which is equivalent to :
+
+{{{
+  SELECT * FROM post INNER JOIN author ON (post.author_id = author.id) WHERE ...
+}}}
+
+This behavior makes the `doSelectJoinXXX` methods unreliable if you expected to be sure to have the same results with or without the join (if you had a not required foreign key, this implicit inner join will just drop the lines where this key was `NULL`).
+
+`nahoPropelOptimizer` forces Propel to use real explicit joins, and checks if the foreign key is `required` or not to make a LEFT JOIN or an INNER JOIN.
+
+Due to a still partial support of those joins in Propel, the related object is always hydrated, but when the foreign key was `NULL` it's hydrated with `NULL` values... But the next optimization is here to fix that ;)
+
+=== LEFT JOINS and related objects hydrated with NULL values (defect) ===
+
+When you make a LEFT JOIN, Propel always hydrates the related object, even if there is *no* related object !
+
+If there is no related object, you will get corrupted results.
+
+Let's see this schema, where a user can have a group, but it's not required :
+
+{{{
+  t_group:
+    id: ~
+    name: { type: varchar(128), index: unique }
+  t_user:
+    id: ~
+    login: { type: varchar(128), index: unique }
+    group_id: { type: integer, foreignTable: t_group, foreignReference: id, required: false }
+}}}
+
+{{{
+  <?php
+    
+    // Retrieve the user, joined with group, with explicit joins optimization activated
+    // We will retrieve the user with ID = $id, and we know this user has no related group
+    
+    $criteria = new Criteria;
+    $criteria->add(TUser::ID, $id);
+    
+    $users = TUserPeer::doSelectJoinTGroup($criteria);
+    // Executed query : SELECT * FROM t_user JOIN t_group ON (t_user.group_id = t_group.id) WHERE t_user.id = $id
+    
+    $user = $users[0];
+    
+    $group = $user->getGroup();
+    // Default behavior : $group is an instance of TGroup, and all its fields are NULL
+    // Fixed behavior   : $group is NULL
+}}} 
+
+With this optimization, you will not retreive corrupted objects, when the object does not exist, you get NULL as you would expect it to be.
+
+=== Calls to Propel::import (bug) ===
+
+This bug makes the overriding of plugins' model totally impossible, and adds a little overhead just like includes.
+
+If a plugin has a bundled schema with a package attribute different than "lib.model", because of this bug you will not be able to customize the model without touching the files directly located in the plugin's directory.
+
+This is caused by useless calls to Propel::import(). This optimization just removes all of them : they are fully useless as the autoloader handles the loading of model classes very better.
+
+== Configuration ==
+
+All optimizations are activated when you don't specify anything.
+
+To disable an optimization, just add the corresponding option to your `config/propel.ini` :
+
+{{{
+  ; Disable optimization "Includes overhead"
+  propel.builder.addIncludes = true
+  
+  ; Disable optimization "Explicit joins"
+  propel.builder.implicitJoins = true
+  
+  ; Disable optimization "LEFT JOINS and related objects hydrated with NULL values"
+  propel.builder.hydrateNULLs = true
+  
+  ; Disable optimization "Calls to Propel::import"
+  propel.builder.addPropelImports = true
+}}}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" packagerversion="1.4.1" version="2.0" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+ <name>nahoPropelOptimizerPlugin</name>
+ <channel>pear.symfony-project.com</channel>
+ <summary>Applies optimizations and bugfixes to the Propel generated classe</summary>
+ <description>This plugin fixes a few defects (not to say "bugs") in Propel model generation, that are not yet handled by Symfony builder wrapping.</description>
+ <lead>
+  <name/>
+  <user/>
+  <email/>
+  <active>yes</active>
+ </lead>
+ <date>2008-04-14</date>
+ <version>
+   <release>0.0.1</release>
+   <api>0.0.1</api>
+ </version>
+ <stability>
+  <release>beta</release>
+  <api>beta</api>
+ </stability>
+ <license uri="http://www.symfony-project.com/license">MIT license</license>
+ <notes>-</notes>
+ <contents><dir name="/"><file name="LICENSE" role="data"/><file name="README" role="data"/><dir name="lib"><file name="SfOptimizedMapBuilderBuilder.php" role="data"/><file name="SfOptimizedObjectBuilder.php" role="data"/><file name="SfOptimizedPeerBuilder.php" role="data"/><file name="SfOptimizedExtensionObjectBuilder.php" role="data"/><file name="SfOptimizedExtensionPeerBuilder.php" role="data"/><file name="SfOptimizedMultiExtendObjectBuilder.php" role="data"/></dir></dir></contents>
+
+ <dependencies>
+  <required>
+   <php>
+    <min>5.1.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.1</min>
+   </pearinstaller>
+   <package>
+    <name>symfony</name>
+    <channel>pear.symfony-project.com</channel>
+    <min>0.8.1</min>
+    <max>1.1.0</max>
+    <exclude>1.1.0</exclude>
+   </package>
+  </required>
+ </dependencies>
+
+ <phprelease>
+ </phprelease>
+
+ <changelog>
+ </changelog>
+</package>
