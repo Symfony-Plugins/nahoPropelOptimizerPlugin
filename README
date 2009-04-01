@@ -145,3 +145,25 @@ To disable an optimization, just add the corresponding option to your `config/pr
   ; Disable optimization "Calls to Propel::import"
   propel.builder.addPropelImports = true
 }}}
+
+== Additional configuration ==
+
+To be documented, following optimizations have become available for Oracle and specific needs :
+
+{{{
+  ; Disable fix for Oracle that declares BIGINT as a STRING in MapBuilder class
+  propel.builder.bigintAsString = true
+  
+  ; Enable automatic type-casting in accessors (this option is disabled by default because of possible heavy consequences)
+  propel.builder.addTypeCasting = true
+  
+  ; Add support for aliases in TablePeer::addSelectColumns (this option is disabled by default because of possible heavy consequences)
+  propel.builder.joinWithAlias = true
+
+  ; Removes the generic "doSelectJoin(...)" and "doCountJoin(...)" methods added by nahoPropelOptimizer
+  propel.builder.removeGenericJoin = true
+  
+  ; DO NOT fix the bug (fixed by default) when you get a "Fatal error: Call to a member function getPrimaryKey() on a non-object in /.../lib/model/om/Base...Peer.php on line ..."
+  propel.builder.doNotFixBugGetPrimaryKeyOnNonObject = true
+  
+}}}

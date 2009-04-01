@@ -1,8 +1,10 @@
 <?php
 
-include_once 'addon/propel/builder/SfObjectBuilder.php';
+require_once sfConfig::get('sf_symfony_lib_dir').'/addon/propel/builder/SfObjectBuilder.php';
 
-class SfOptimizedObjectBuilder extends SfObjectBuilder
+require_once dirname(__FILE__) . '/NahoBuilder.php';
+
+class SfOptimizedObjectBuilder extends NahoObjectBuilder
 {
   
   public function build()
@@ -36,6 +38,45 @@ class SfOptimizedObjectBuilder extends SfObjectBuilder
 	  	' . $return;
 	  	$script = str_replace($return, $check_null_hydrated_script, $script);
 	  }
+  }
+  
+  protected function addGenericAccessor(&$script, $col)
+  {
+    $clo = strtolower($col->getName());
+    
+    $accessor = '';
+    parent::addGenericAccessor($accessor, $col);
+    if (DataModelBuilder::getBuildProperty('builderAddTypeCasting')) {
+      $cast = null;
+      switch ($col->getType()) {
+        case PropelTypes::BIGINT:
+        case PropelTypes::INTEGER:
+        case PropelTypes::NUMERIC:
+        case PropelTypes::SMALLINT:
+        case PropelTypes::TINYINT:
+          $cast = '(int)';
+          break;
+        case PropelTypes::DECIMAL:
+        case PropelTypes::DOUBLE:
+        case PropelTypes::FLOAT:
+        case PropelTypes::REAL:
+          $cast = '(float)';
+          break;
+        case PropelTypes::BOOLEAN:
+          $cast = '(boolean)';
+          break;
+        case PropelTypes::VARCHAR:
+        case PropelTypes::LONGVARCHAR:
+          $cast = '(string)';
+          break;
+      }
+      
+      if ($cast) {
+        $accessor = str_replace('return $this->'.$clo, 'return is_null($this->'.$clo.') ? null : '.$cast.' $this->'.$clo, $accessor);
+      }
+    }
+      
+    $script .= $accessor;
   }
   
 }
