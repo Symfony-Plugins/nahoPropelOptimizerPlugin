@@ -19,6 +19,12 @@ class SfOptimizedPeerBuilder extends NahoPeerBuilder
       $peerCode = preg_replace("/(include|require)_once\s*.*\.php.*\s*/", "", $peerCode);
     }
     
+    // Remove cache in retrieveByPk
+    if (!DataModelBuilder::getBuildProperty('builderNoCacheRetrieveByPk')) {
+      //cache result for retrieveByPk
+      $this->addCachedRetrieveByPk($peerCode);
+    }
+    
     // Change implicit joins (all inner) to explicit INNER or LEFT, depending on the fact the key can be null or not
     if (!DataModelBuilder::getBuildProperty('builderImplicitJoins')) {
       foreach ($this->getTable()->getColumns() as $column) {
@@ -458,4 +464,21 @@ STR;
     $peerCode = str_replace($old_body, $body, $peerCode);
   }
 
+  protected function addCachedRetrieveByPk(&$script)
+  {
+    $script = str_replace(
+      'public static function retrieveByPK($pk, $con = null)'."\n\t".'{'."\n\t\t",
+      'public static function retrieveByPK($pk, $con = null)'."\n\t".'{'."\n\t\t".
+        'static $instances = array();'."\n\t\t".
+        'if (isset($instances[$pk]) && !is_null($instances[$pk])) return $instances[$pk];'."\n\t\t",
+      $script
+    );
+    
+    $script = str_replace(
+      'return !empty($v) > 0 ? $v[0] : null;',
+      'return $instances[$pk] = (!empty($v) > 0 ? $v[0] : null);',
+      $script
+    );
+  }
+  
 }

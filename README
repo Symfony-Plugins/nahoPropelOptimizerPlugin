@@ -166,4 +166,7 @@ To be documented, following optimizations have become available for Oracle and s
   ; DO NOT fix the bug (fixed by default) when you get a "Fatal error: Call to a member function getPrimaryKey() on a non-object in /.../lib/model/om/Base...Peer.php on line ..."
   propel.builder.doNotFixBugGetPrimaryKeyOnNonObject = true
   
+  ; Do not cache results of retrieveByPk methods
+  propel.builder.noCacheRetrieveByPk = true
+  
 }}}
